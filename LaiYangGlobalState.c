@@ -49,7 +49,13 @@ int main(int argc, char* argv[]) {
 	NormalReceivedMessage received_messages[100];
 
 	// received control messages (with tag = true)
-	int received_control_messages = 0;
+	int total_control_messages = 0;
+	ControlReceivedMessage control_received_messages[100];
+
+	// current snapshot
+	Snapshot my_snapshot;
+
+	// TODO: received snapshots
 
 	/* start up MPI */
 	MPI_Init(&argc, &argv);
@@ -194,12 +200,10 @@ int main(int argc, char* argv[]) {
 	// if I am the snapshot initiator process, I start it & also send another normal message (tag = true)
 	if (my_rank == atoi(argv[1])){
 		// record state
-		Snapshot my_snapshot = {
-			.process_rank = my_rank,
-			.x = x,
-			.total_sent_messages = total_sent_messages,
-			.total_received_messages = total_received_messages
-		};
+		my_snapshot.process_rank = my_rank;
+		my_snapshot.x = x;
+		my_snapshot.total_sent_messages = total_sent_messages;
+		my_snapshot.total_received_messages = total_received_messages;
 		memcpy(my_snapshot.sent_messages, sent_messages, sizeof(sent_messages));
 		memcpy(my_snapshot.received_messages, received_messages, sizeof(received_messages));
 
@@ -266,12 +270,10 @@ int main(int argc, char* argv[]) {
 			else if (msg.tag == TRUE && my_tag == FALSE) {
 				// start the snapshotting process
 				// record state
-				Snapshot my_snapshot = {
-						.process_rank = my_rank,
-						.x = x,
-						.total_sent_messages = total_sent_messages,
-						.total_received_messages = total_received_messages
-				};
+				my_snapshot.process_rank = my_rank;
+				my_snapshot.x = x;
+				my_snapshot.total_sent_messages = total_sent_messages;
+				my_snapshot.total_received_messages = total_received_messages;;
 				memcpy(my_snapshot.sent_messages, sent_messages, sizeof(sent_messages));
 				memcpy(my_snapshot.received_messages, received_messages, sizeof(received_messages));
 
@@ -324,13 +326,25 @@ int main(int argc, char* argv[]) {
 				// printf("[%d] I received your control message, process %d!\n", my_rank, source);
 			}
 
-			received_control_messages++;
-			if (received_control_messages == p-1) {
+			total_control_messages++;
+
+			// save the control message
+			ControlReceivedMessage control_received_message =
+			{
+				.source = source,
+				.all_messages_received = FALSE
+			};
+			memcpy(&control_received_message.control_message, &msg.control_content, sizeof(msg.control_content));
+			control_received_messages[total_control_messages - 1] = control_received_message;
+
+			if (total_control_messages == p-1) {
 				printf("[%d] I have received all control messages!\n", my_rank);
 
 				// check if snapshot is final somehow
-				// if it is final, send it to the initiator proces
+				// if it is final, send it to the initiator process
 				// terminate!
+
+				// how do I terminate?
 			}
 		}
 
@@ -353,6 +367,16 @@ int main(int argc, char* argv[]) {
 		printf("[%d] msg.arrival_number: %d\n", my_rank,
 				received_messages[i].arrival_number);
 		printf("[%d] msg.content: %s\n", my_rank, received_messages[i].content);
+	}
+
+	for (i = 0; i < total_control_messages; i++) {
+		printf("[---%d] msg.source: %d\n", my_rank, control_received_messages[i].source);
+		printf("[---%d] msg.are_all_messages_received: %d\n", my_rank,
+				control_received_messages[i].all_messages_received);
+		for (j = 0; j < control_received_messages[i].control_message.total_messages_on_channel; j++) {
+			printf("[---%d] msg.msg_ids: %d\n", my_rank,
+					control_received_messages[i].control_message.messages_ids[j]);
+		}
 	}
 
 //	if (my_rank == atoi(argv[1])) {

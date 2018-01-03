@@ -19,6 +19,12 @@ typedef struct Control {
 	int messages_ids[10];
 } Control;
 
+typedef struct ControlReceivedMessage {
+	int source;
+	Control control_message;
+	int all_messages_received;
+} ControlReceivedMessage;
+
 // Snapshot-type message content
 typedef struct Snapshot {
 	int process_rank;
