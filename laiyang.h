@@ -1,11 +1,15 @@
-#ifndef TYPES_H_
-#define TYPES_H_
+#ifndef LAIYANG_H_
+#define LAIYANG_H_
 
-// used for recording messages
+/* processes record their normal (i.e. char[]) messages */
+
 typedef struct NormalSentMessage {
 	int destination;
 	int arrival_number;
 } NormalSentMessage;
+
+
+/* processes record the normal messages they receive */
 
 typedef struct NormalReceivedMessage {
 	int source;
@@ -13,11 +17,16 @@ typedef struct NormalReceivedMessage {
 	char content[100];
 } NormalReceivedMessage;
 
-// Control-type message content
+
+/* used for passing Control-type content (i.e. info about send messages) between processes */
+
 typedef struct Control {
 	int total_messages_on_channel;
 	int messages_ids[10];
 } Control;
+
+
+/* processes record the control messages they receive */
 
 typedef struct ControlReceivedMessage {
 	int source;
@@ -25,7 +34,11 @@ typedef struct ControlReceivedMessage {
 	int all_messages_received;
 } ControlReceivedMessage;
 
-// Snapshot-type message content
+
+/* the local (partial) snapshot each process builds;
+ * also used for passing Snapshot-type content;
+ * the initiating process also has a list of such Snapshots */
+
 typedef struct Snapshot {
 	int process_rank;
 	int x;
@@ -35,8 +48,10 @@ typedef struct Snapshot {
 	NormalReceivedMessage received_messages[100];
 } Snapshot;
 
-// Messages used to communicate between the processes
-// Only one of the content types (i.e. normal, control, snapshot) should be filled in
+
+/* the general message type through which processes communicate;
+ * only one of the content types (i.e. normal, control, snapshot) should be filled in / accessed at a time */
+
 typedef struct Message {
 	int type;
 	int tag;
@@ -47,4 +62,7 @@ typedef struct Message {
 	Snapshot snapshot_content;
 } Message;
 
-#endif /* TYPES_H_ */
+
+void print_snapshots(int rank, int total_snapshots, Snapshot snapshots[100]);
+
+#endif /* LAIYANG_H_ */

@@ -8,8 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "mpi.h"
-#include "types.h"
+#include "laiyang.h"
 
 #define NORMAL 0
 #define CONTROL 1
@@ -33,7 +34,6 @@ int main(int argc, char* argv[]) {
 	int my_tag = FALSE;
 
 	// a variable, to be included in the snapshot
-	// TODO: assign random value
 	int x = 0;
 
 	// recorded sent messages (only with tag = false)
@@ -46,14 +46,14 @@ int main(int argc, char* argv[]) {
 	int total_received_messages = 0;
 	NormalReceivedMessage received_messages[100];
 
-	// received control messages (with tag = true)
+	// received control messages (have tag = true)
 	int total_control_messages = 0;
 	ControlReceivedMessage control_received_messages[100];
 
 	// current snapshot
 	Snapshot my_snapshot;
 
-	// received snapshots
+	// received snapshots (for the initiator process)
 	int total_snapshot_messages = 0;
 	Snapshot received_snapshots[100];
 
@@ -65,6 +65,11 @@ int main(int argc, char* argv[]) {
 
 	/* find out number of processes */
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
+
+
+	// give x a random value
+	srand(time(NULL) + my_rank);
+	x = rand() % 500;
 
 
 	// create MPI NormalSentMessage type
@@ -165,40 +170,41 @@ int main(int argc, char* argv[]) {
 	MPI_Type_commit(&MPI_Message);
 
 
-	// start algorithm
+	// ---------- start algorithm ----------
 	struct Message msg;
 
 	// initially, each process sends some normal messages to the other processes (tag = false)
 	msg.type = NORMAL;
 	msg.tag = my_tag;
-	for (i = 0; i < p; i++) {
-		if (my_rank != i) {
+	for (dest = 0; dest < p; dest++) {
+		if (my_rank != dest) {
 			msg.arrival_number = 0;
 			sprintf(msg.normal_content,
-					"[source: %d] Message no. %d to process %d", my_rank, 0, i);
-			MPI_Isend(&msg, 1, MPI_Message, i, tag, MPI_COMM_WORLD, &request);
+					"[source: %d] Message no. %d to process %d", my_rank, 0, dest);
+			MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
 			total_sent_messages++;
 
 			NormalSentMessage sent_msg = {
-					.destination = i,
+					.destination = dest,
 					.arrival_number = 0
 			};
 			sent_messages[total_sent_messages - 1] = sent_msg;
 
 			msg.arrival_number = 1;
 			sprintf(msg.normal_content,
-					"[source: %d] Message no. %d to process %d", my_rank, 1, i);
-			MPI_Isend(&msg, 1, MPI_Message, i, tag, MPI_COMM_WORLD, &request);
+					"[source: %d] Message no. %d to process %d", my_rank, 1, dest);
+			MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
 			total_sent_messages++;
 
-			sent_msg.destination = i;
+			sent_msg.destination = dest;
 			sent_msg.arrival_number = 1;
 			sent_messages[total_sent_messages - 1] = sent_msg;
 		}
 	}
 
-	// if I am the snapshot initiator process, I start it & also send another normal message (tag = true)
+	// if I am the initiator process, I start the snapshot & also send another normal message (tag = true)
 	if (my_rank == atoi(argv[1])){
+
 		// record state
 		my_snapshot.process_rank = my_rank;
 		my_snapshot.x = x;
@@ -253,11 +259,6 @@ int main(int argc, char* argv[]) {
 		MPI_Recv(&msg, 1, MPI_Message, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
 		source = status.MPI_SOURCE;
 
-//		if (my_rank != atoi(argv[1])) {
-//			printf("[%d in the while, iteration %d] my_snapshot.total_sent_messages: %d && received message no.: %d\n",
-//					my_rank, i,  my_snapshot.total_sent_messages, msg.arrival_number);
-//		}
-
 		switch (msg.type) {
 		case NORMAL:
 			if (msg.tag == FALSE) {
@@ -270,9 +271,16 @@ int main(int argc, char* argv[]) {
 				};
 				strcpy(received_msg.content, msg.normal_content);
 				received_messages[total_received_messages - 1] = received_msg;
+
+				if (my_tag == TRUE) {
+					// if my tag = true, I have already done the snapshot, so I add this message to it
+					my_snapshot.total_received_messages++;
+					my_snapshot.received_messages[total_received_messages - 1] = received_msg;
+				}
 			}
 			else if (msg.tag == TRUE && my_tag == FALSE) {
 				// start the snapshotting process
+
 				// record state
 				my_snapshot.process_rank = my_rank;
 				my_snapshot.x = x;
@@ -342,6 +350,7 @@ int main(int argc, char* argv[]) {
 
 			// check if we received all the message ids mentioned in this control message
 			int messages_found = 0;
+
 			// j parses the control message ids
 			for (j = 0; j < control_recv_msg.control_message.total_messages_on_channel; j++) {
 				// k parses the received message ids
@@ -359,9 +368,9 @@ int main(int argc, char* argv[]) {
 			control_received_messages[total_control_messages - 1] = control_recv_msg;
 			break;
 
-		case SNAPSHOT:
-			printf("[SNAPSHOT: %d] I received from %d the snapshot message.\n", my_rank, source);
-			printf("[SNAPSHOT: %d] Process %d's total sent messages: %d\n", my_rank, source, msg.snapshot_content.total_sent_messages);
+		case SNAPSHOT: // only for the initiator process
+//			printf("[SNAPSHOT: %d] I received from %d the snapshot message.\n", my_rank, source);
+//			printf("[SNAPSHOT: %d] Process %d's total sent messages: %d\n", my_rank, source, msg.snapshot_content.total_sent_messages);
 
 			total_snapshot_messages++;
 
@@ -380,7 +389,12 @@ int main(int argc, char* argv[]) {
 
 			// check to see if I have all snapshots; if so, print them and end
 			if (total_snapshot_messages == p - 1) {
-				printf("[SNAPSHOT - %d] I received all snapshot messages!\n", my_rank);
+				printf("[SNAPSHOT - process %d] I received all snapshot messages!\n", my_rank);
+
+				received_snapshots[total_snapshot_messages] = my_snapshot;
+				total_snapshot_messages++;
+
+				print_snapshots(my_rank, total_snapshot_messages, received_snapshots);
 
 				go_on = 0;
 			}
@@ -416,37 +430,8 @@ int main(int argc, char* argv[]) {
 		i++;
 	}
 
-//	for (i = 0; i < total_received_messages; i++) {
-//		printf("[%d] msg.source: %d\n", my_rank, received_messages[i].source);
-//		printf("[%d] msg.arrival_number: %d\n", my_rank,
-//				received_messages[i].arrival_number);
-//		printf("[%d] msg.content: %s\n", my_rank, received_messages[i].content);
-//	}
-//
-//	for (i = 0; i < total_control_messages; i++) {
-//		printf("[---%d] msg.source: %d\n", my_rank, control_received_messages[i].source);
-//		printf("[---%d] msg.are_all_messages_received: %d\n", my_rank,
-//				control_received_messages[i].all_messages_received);
-//		for (j = 0; j < control_received_messages[i].control_message.total_messages_on_channel; j++) {
-//			printf("[---%d] msg.msg_ids: %d\n", my_rank,
-//					control_received_messages[i].control_message.messages_ids[j]);
-//		}
-//	}
-
 	/* shut down MPI */
 	MPI_Finalize();
 
 	return 0;
-
-	// printing snapshot messages
-//	printf("control_content.total_msgs_on_channel: %d\n", msg.control_content.total_messages_on_channel);
-//	printf("control_content.messages_ids: \n");
-//	for (i = 0; i < msg.control_content.total_messages_on_channel; i++) {
-//		printf("id: %d\n", msg.control_content.messages_ids[i]);
-//	}
-
-	// empty these out - maybe they don't need emptying?
-//		memset(msg.control_content, 0, sizeof msg.control_content);
-//		msg.snapshot_state_content = 0;
-//		memset(msg.snapshot_messages_content, 0, sizeof msg.snapshot_messages_content);
 }
