@@ -46,14 +46,14 @@ int main(int argc, char* argv[]) {
 	int total_received_messages = 0;
 	NormalReceivedMessage received_messages[100];
 
-	// received control messages (with tag = true)
+	// received control messages (have tag = true)
 	int total_control_messages = 0;
 	ControlReceivedMessage control_received_messages[100];
 
 	// current snapshot
 	Snapshot my_snapshot;
 
-	// received snapshots
+	// received snapshots (for the initiator process)
 	int total_snapshot_messages = 0;
 	Snapshot received_snapshots[100];
 
@@ -66,6 +66,8 @@ int main(int argc, char* argv[]) {
 	/* find out number of processes */
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 
+
+	// give x a random value
 	srand(time(NULL) + my_rank);
 	x = rand() % 500;
 
@@ -168,40 +170,41 @@ int main(int argc, char* argv[]) {
 	MPI_Type_commit(&MPI_Message);
 
 
-	// start algorithm
+	// ---------- start algorithm ----------
 	struct Message msg;
 
 	// initially, each process sends some normal messages to the other processes (tag = false)
 	msg.type = NORMAL;
 	msg.tag = my_tag;
-	for (i = 0; i < p; i++) {
-		if (my_rank != i) {
+	for (dest = 0; dest < p; dest++) {
+		if (my_rank != dest) {
 			msg.arrival_number = 0;
 			sprintf(msg.normal_content,
-					"[source: %d] Message no. %d to process %d", my_rank, 0, i);
-			MPI_Isend(&msg, 1, MPI_Message, i, tag, MPI_COMM_WORLD, &request);
+					"[source: %d] Message no. %d to process %d", my_rank, 0, dest);
+			MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
 			total_sent_messages++;
 
 			NormalSentMessage sent_msg = {
-					.destination = i,
+					.destination = dest,
 					.arrival_number = 0
 			};
 			sent_messages[total_sent_messages - 1] = sent_msg;
 
 			msg.arrival_number = 1;
 			sprintf(msg.normal_content,
-					"[source: %d] Message no. %d to process %d", my_rank, 1, i);
-			MPI_Isend(&msg, 1, MPI_Message, i, tag, MPI_COMM_WORLD, &request);
+					"[source: %d] Message no. %d to process %d", my_rank, 1, dest);
+			MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
 			total_sent_messages++;
 
-			sent_msg.destination = i;
+			sent_msg.destination = dest;
 			sent_msg.arrival_number = 1;
 			sent_messages[total_sent_messages - 1] = sent_msg;
 		}
 	}
 
-	// if I am the snapshot initiator process, I start it & also send another normal message (tag = true)
+	// if I am the initiator process, I start the snapshot & also send another normal message (tag = true)
 	if (my_rank == atoi(argv[1])){
+
 		// record state
 		my_snapshot.process_rank = my_rank;
 		my_snapshot.x = x;
@@ -277,6 +280,7 @@ int main(int argc, char* argv[]) {
 			}
 			else if (msg.tag == TRUE && my_tag == FALSE) {
 				// start the snapshotting process
+
 				// record state
 				my_snapshot.process_rank = my_rank;
 				my_snapshot.x = x;
@@ -346,6 +350,7 @@ int main(int argc, char* argv[]) {
 
 			// check if we received all the message ids mentioned in this control message
 			int messages_found = 0;
+
 			// j parses the control message ids
 			for (j = 0; j < control_recv_msg.control_message.total_messages_on_channel; j++) {
 				// k parses the received message ids
@@ -363,7 +368,7 @@ int main(int argc, char* argv[]) {
 			control_received_messages[total_control_messages - 1] = control_recv_msg;
 			break;
 
-		case SNAPSHOT:
+		case SNAPSHOT: // only for the initiator process
 //			printf("[SNAPSHOT: %d] I received from %d the snapshot message.\n", my_rank, source);
 //			printf("[SNAPSHOT: %d] Process %d's total sent messages: %d\n", my_rank, source, msg.snapshot_content.total_sent_messages);
 
