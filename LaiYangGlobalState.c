@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mpi.h"
-#include "types.h"
+#include "laiyang.h"
 
 #define NORMAL 0
 #define CONTROL 1

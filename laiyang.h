@@ -1,5 +1,5 @@
-#ifndef TYPES_H_
-#define TYPES_H_
+#ifndef LAIYANG_H_
+#define LAIYANG_H_
 
 // used for recording messages
 typedef struct NormalSentMessage {
@@ -47,4 +47,4 @@ typedef struct Message {
 	Snapshot snapshot_content;
 } Message;
 
-#endif /* TYPES_H_ */
+#endif /* LAIYANG_H_ */
