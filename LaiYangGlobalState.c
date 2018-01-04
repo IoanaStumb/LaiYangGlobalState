@@ -1,10 +1,8 @@
 /*
  ============================================================================
  Name        : LaiYangGlobalState.c
- Author      : 
- Version     :
- Copyright   : Your copyright notice
- Description : Hello MPI World in C 
+ Author      : IoanaStumb
+ Description : Main Lai-Yang global snapshot algorithm implementation
  ============================================================================
  */
 #include <stdio.h>
