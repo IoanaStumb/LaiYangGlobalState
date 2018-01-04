@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "mpi.h"
 #include "laiyang.h"
 
@@ -33,7 +34,6 @@ int main(int argc, char* argv[]) {
 	int my_tag = FALSE;
 
 	// a variable, to be included in the snapshot
-	// TODO: assign random value
 	int x = 0;
 
 	// recorded sent messages (only with tag = false)
@@ -65,6 +65,9 @@ int main(int argc, char* argv[]) {
 
 	/* find out number of processes */
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
+
+	srand(time(NULL) + my_rank);
+	x = rand() % 500;
 
 
 	// create MPI NormalSentMessage type
