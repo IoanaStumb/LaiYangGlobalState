@@ -438,6 +438,7 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 
+
 	// printing snapshot messages
 //	printf("control_content.total_msgs_on_channel: %d\n", msg.control_content.total_messages_on_channel);
 //	printf("control_content.messages_ids: \n");
