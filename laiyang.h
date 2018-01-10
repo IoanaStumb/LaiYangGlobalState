@@ -63,6 +63,6 @@ typedef struct Message {
 } Message;
 
 
-void print_snapshots(int rank, int total_snapshots, Snapshot snapshots[100]);
+void print_snapshots(int rank, int total_snapshots, Snapshot snapshots[100], int total_messages_sent_in_network, int total_messages_received_in_network);
 
 #endif /* LAIYANG_H_ */

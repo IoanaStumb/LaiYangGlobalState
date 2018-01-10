@@ -56,6 +56,8 @@ int main(int argc, char* argv[]) {
 
 	// received snapshots (for the initiator process)
 	int total_snapshot_messages = 0;
+	int total_messages_sent_in_network = 0;
+	int total_messages_received_in_network = 0;
 	Snapshot received_snapshots[100];
 
 	/* start up MPI */
@@ -406,6 +408,9 @@ int main(int argc, char* argv[]) {
 
 			received_snapshots[total_snapshot_messages - 1] = received_snapshot;
 
+			total_messages_sent_in_network += received_snapshot.total_sent_messages;
+			total_messages_received_in_network += received_snapshot.total_received_messages;
+
 			// check to see if I have all snapshots; if so, print them and end
 			if (total_snapshot_messages == p - 1) {
 				printf("[SNAPSHOT - process %d] I received all snapshot messages!\n", my_rank);
@@ -413,7 +418,11 @@ int main(int argc, char* argv[]) {
 				received_snapshots[total_snapshot_messages] = my_snapshot;
 				total_snapshot_messages++;
 
-				print_snapshots(my_rank, total_snapshot_messages, received_snapshots);
+				total_messages_sent_in_network += total_sent_messages;
+				total_messages_received_in_network += total_received_messages;
+
+				print_snapshots(my_rank, total_snapshot_messages, received_snapshots,
+						total_messages_sent_in_network, total_messages_received_in_network);
 
 				go_on = 0;
 			}

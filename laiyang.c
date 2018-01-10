@@ -4,12 +4,16 @@
 #include "mpi.h"
 #include "laiyang.h"
 
-void print_snapshots(int rank, int total_snapshots, Snapshot snapshots[100]) {
+void print_snapshots(int rank, int total_snapshots, Snapshot snapshots[100], int total_messages_sent_in_network, int total_messages_received_in_network) {
 
 	int i, j;
-	char output[1000000], temp_output[100000];
+	char output[2000000], temp_output[100000];
 
-	sprintf(output, "[SNAPSHOT - process %d] I have a total of %d local snapshots; the global snapshot: \n", rank, total_snapshots);
+	sprintf(output, "[SNAPSHOT - process %d] I have a total of %d local snapshots. \n"
+					"[SNAPSHOT - process %d] In this network, there were a total of %d messages sent and %d messages received. \n"
+					"[SNAPSHOT - process %d] The global snapshot: \n",
+					rank, total_snapshots, rank, total_messages_sent_in_network, total_messages_received_in_network, rank);
+
 	for (i = 0; i < total_snapshots; i++) {
 		sprintf(temp_output, "\n[SNAPSHOT - process %d] Snapshot %d: \n", rank, i);
 
