@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 
 	int i, j, k;
 	int go_on = 1;
-	int random_messages_number = 0;
+	int random_messages = 0;
 
 	// current tag - indicates if the process has taken its snapshot or not
 	int my_tag = FALSE;
@@ -205,8 +205,15 @@ int main(int argc, char* argv[]) {
 				sent_messages[total_sent_messages - 1] = sent_msg;
 			}
 			else {
-				random_messages_number = rand() % (p - 1) + atoi(argv[3]);
-				for (i = 1; i <= random_messages_number; i++) {
+				random_messages = rand() % (p - 1) + atoi(argv[3]);
+
+				// logging
+				if (atoi(argv[4]) == 1) {
+					printf("[INITIAL - process %d] I will send %d messages to process %d. \n", my_rank, random_messages, dest);
+				}
+
+
+				for (i = 1; i <= random_messages; i++) {
 					msg.arrival_number = i;
 					sprintf(msg.normal_content,
 							"Message no. %d, from process %d to process %d", i, my_rank, dest);
@@ -413,7 +420,7 @@ int main(int argc, char* argv[]) {
 
 			// check to see if I have all snapshots; if so, print them and end
 			if (total_snapshot_messages == p - 1) {
-				printf("[SNAPSHOT - process %d] I received all snapshot messages!\n", my_rank);
+				printf("\n[SNAPSHOT - process %d] I received all snapshot messages!\n", my_rank);
 
 				received_snapshots[total_snapshot_messages] = my_snapshot;
 				total_snapshot_messages++;
