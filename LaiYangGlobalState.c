@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
 
 	int i, j, k;
 	int go_on = 1;
+	int random_messages_number = 0;
 
 	// current tag - indicates if the process has taken its snapshot or not
 	int my_tag = FALSE;
@@ -36,7 +37,7 @@ int main(int argc, char* argv[]) {
 	// a variable, to be included in the snapshot
 	int x = 0;
 
-	// recorded sent messages (only with tag = false)
+	// recorded sent messages (only with tag = false);
 	int total_sent_messages = 0;
 	NormalSentMessage sent_messages[100];
 	int messages_sent_on_channel;
@@ -178,27 +179,45 @@ int main(int argc, char* argv[]) {
 	msg.tag = my_tag;
 	for (dest = 0; dest < p; dest++) {
 		if (my_rank != dest) {
-			msg.arrival_number = 0;
-			sprintf(msg.normal_content,
-					"[source: %d] Message no. %d to process %d", my_rank, 0, dest);
-			MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
-			total_sent_messages++;
+			if (atoi(argv[2]) == 1) {
+				msg.arrival_number = 1;
+				sprintf(msg.normal_content,
+						"Message no. %d, from process %d to process %d", 1, my_rank, dest);
+				MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
+				total_sent_messages++;
 
-			NormalSentMessage sent_msg = {
-					.destination = dest,
-					.arrival_number = 0
-			};
-			sent_messages[total_sent_messages - 1] = sent_msg;
+				NormalSentMessage sent_msg = {
+						.destination = dest,
+						.arrival_number = 1
+				};
+				sent_messages[total_sent_messages - 1] = sent_msg;
 
-			msg.arrival_number = 1;
-			sprintf(msg.normal_content,
-					"[source: %d] Message no. %d to process %d", my_rank, 1, dest);
-			MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
-			total_sent_messages++;
+				msg.arrival_number = 2;
+				sprintf(msg.normal_content,
+						"Message no. %d, from process %d to process %d", 2, my_rank, dest);
+				MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
+				total_sent_messages++;
 
-			sent_msg.destination = dest;
-			sent_msg.arrival_number = 1;
-			sent_messages[total_sent_messages - 1] = sent_msg;
+				sent_msg.destination = dest;
+				sent_msg.arrival_number = 2;
+				sent_messages[total_sent_messages - 1] = sent_msg;
+			}
+			else {
+				random_messages_number = rand() % (p - 1) + atoi(argv[3]);
+				for (i = 1; i <= random_messages_number; i++) {
+					msg.arrival_number = i;
+					sprintf(msg.normal_content,
+							"Message no. %d, from process %d to process %d", i, my_rank, dest);
+					MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
+					total_sent_messages++;
+
+					NormalSentMessage sent_msg = {
+							.destination = dest,
+							.arrival_number = 1
+					};
+					sent_messages[total_sent_messages - 1] = sent_msg;
+				}
+			}
 		}
 	}
 
@@ -245,9 +264,9 @@ int main(int argc, char* argv[]) {
 
 				// also send a normal message (with tag = true now)
 				msg.type = NORMAL;
-				msg.arrival_number = 2;
+				msg.arrival_number = 3;
 				sprintf(msg.normal_content,
-						"[source: %d] Message no. %d to process %d", my_rank, 2, dest);
+						"[source: %d] Message no. %d to process %d", my_rank, 3, dest);
 				MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
 			}
 		}
@@ -321,9 +340,9 @@ int main(int argc, char* argv[]) {
 
 						// also send a normal message (with tag = true now)
 						msg.type = NORMAL;
-						msg.arrival_number = 2;
+						msg.arrival_number = 3;
 						sprintf(msg.normal_content,
-								"[source: %d] Message no. %d to process %d", my_rank, 2, dest);
+								"[source: %d] Message no. %d to process %d", my_rank, 3, dest);
 						MPI_Isend(&msg, 1, MPI_Message, dest, tag, MPI_COMM_WORLD, &request);
 					}
 				}

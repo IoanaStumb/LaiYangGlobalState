@@ -7,7 +7,7 @@
 void print_snapshots(int rank, int total_snapshots, Snapshot snapshots[100]) {
 
 	int i, j;
-	char output[10000], temp_output[1000];
+	char output[1000000], temp_output[100000];
 
 	sprintf(output, "[SNAPSHOT - process %d] I have a total of %d local snapshots; the global snapshot: \n", rank, total_snapshots);
 	for (i = 0; i < total_snapshots; i++) {
