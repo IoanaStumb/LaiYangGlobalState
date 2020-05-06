@@ -1,5 +1,13 @@
-# LaiYangGlobalState
+# University homework
 
-A simple implementation of Lai-Yang's snapshotting algorithm for distributed systems (with a control message), using OpenMPI.
+**This is a required homework for one of the [Faculty of Automatic Control and Computer Engineering Iasi](https://ac.tuiasi.ro/) master programmes.**
 
-Required homework for the 1st semester of TUIASI's DSWT master degree.
+**Master programme:** [Distributed systems and Web technologies](https://ac.tuiasi.ro/studii/masterat/sisteme-distribuite-si-tehnologii-web/)
+
+**Course:** Fundamentals of Distributed Processing
+
+**When:** Fall 2018
+
+## LaiYangGlobalState
+
+A simple C implementation of [Lai-Yang's snapshotting algorithm](https://www.cs.mcgill.ca/~lli22/575/distributedsnapshot.pdf) for distributed systems (with a control message), using OpenMPI.
